@@ -124,6 +124,8 @@ describe('CustomerController', () => {
 });
 ```
 
+## Testing the application
+
 Now running `npm test` will verify that your authentication pipeline works.
 
 The test should always pass, because the `authenticate` function always return a user.
@@ -139,5 +141,7 @@ When running `npm test`, you will get an error saying:
 ```
 Error: expected 200 "OK", got 401 "Unauthorized"
 ```
+
+## Conclusion
 
 At this point, you have set up the minimal infrastructure for enabling authentication.
