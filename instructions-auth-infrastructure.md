@@ -52,7 +52,7 @@ export class JWTAuthenticationStrategy implements AuthenticationStrategy {
 }
 ```
 
-## Register the Basic authentication strategy
+## Register the JWT authentication strategy
 
 Now we need to tell our application that this strategy exists and can be used.
 

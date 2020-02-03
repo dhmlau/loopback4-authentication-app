@@ -30,6 +30,12 @@ export namespace TokenServiceBindings {
 
 This `JWTService` will validate the token. If the token is valid, it returns the user profile.
 
+We will be using the `jsonwebtoken` module to encode and decode a token, so let's install this module now by running:
+
+```
+$ npm install --save jsonwebtoken
+```
+
 Create `src/services/jwt-service.ts` with the following content:
 
 ```ts
@@ -169,6 +175,7 @@ Add the imports:
 
 ```ts
 import {TokenServiceBindings, TokenServiceConstants} from './keys';
+import {JWTService} from './services/jwt-service';
 ```
 
 ```ts
@@ -194,3 +201,7 @@ constructor(options?: ApplicationConfig) {
   }
 
 ```
+
+---
+
+[![LoopBack](<https://github.com/strongloop/loopback-next/raw/master/docs/site/imgs/branding/Powered-by-LoopBack-Badge-(blue)-@2x.png>)](http://loopback.io/)

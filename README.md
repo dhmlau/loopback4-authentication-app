@@ -14,7 +14,9 @@ This diagram describes how JWT authentication works:
 We are going to:
 
 - Set up the minimal infrastructure for authentication: [instructions-auth-infrastructure.md](instructions-auth-infrastructure.md). This will be pretty much the same for any kind of authentication that you're going to use.
-- create a TokenService that extracts token from request header and validates & generates tokens: [instructions-jwtauth-tokenservice.md](instructions-jwtauth-tokenservice.md)
 - create a UserService that authenticates the provided credentials from the user database: [instructions-jwtauth-userservice.md](instructions-jwtauth-userservice.md)
+- create a TokenService that extracts token from request header and validates & generates tokens: [instructions-jwtauth-tokenservice.md](instructions-jwtauth-tokenservice.md)
+
+---
 
 [![LoopBack](<https://github.com/strongloop/loopback-next/raw/master/docs/site/imgs/branding/Powered-by-LoopBack-Badge-(blue)-@2x.png>)](http://loopback.io/)
