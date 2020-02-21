@@ -29,20 +29,20 @@ export class UserUserCredentialsController {
   @get('/users/{id}/user-credentials', {
     responses: {
       '200': {
-        description: 'Array of UserCredentials\'s belonging to User',
+        description: 'User has one UserCredentials',
         content: {
           'application/json': {
-            schema: {type: 'array', items: getModelSchemaRef(UserCredentials)},
+            schema: getModelSchemaRef(UserCredentials),
           },
         },
       },
     },
   })
-  async find(
+  async get(
     @param.path.string('id') id: string,
     @param.query.object('filter') filter?: Filter<UserCredentials>,
-  ): Promise<UserCredentials[]> {
-    return this.userRepository.userCredentials(id).find(filter);
+  ): Promise<UserCredentials> {
+    return this.userRepository.userCredentials(id).get(filter);
   }
 
   @post('/users/{id}/user-credentials', {
