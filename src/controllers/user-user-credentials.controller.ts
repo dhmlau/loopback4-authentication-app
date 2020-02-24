@@ -15,16 +15,13 @@ import {
   post,
   requestBody,
 } from '@loopback/rest';
-import {
-  User,
-  UserCredentials,
-} from '../models';
+import {User, UserCredentials} from '../models';
 import {UserRepository} from '../repositories';
 
 export class UserUserCredentialsController {
   constructor(
     @repository(UserRepository) protected userRepository: UserRepository,
-  ) { }
+  ) {}
 
   @get('/users/{id}/user-credentials', {
     responses: {
@@ -49,23 +46,26 @@ export class UserUserCredentialsController {
     responses: {
       '200': {
         description: 'User model instance',
-        content: {'application/json': {schema: getModelSchemaRef(UserCredentials)}},
+        content: {
+          'application/json': {schema: getModelSchemaRef(UserCredentials)},
+        },
       },
     },
   })
   async create(
-    @param.path.string('id') id: typeof User.prototype.id,
+    @param.path.string('email') id: typeof User.prototype.email,
     @requestBody({
       content: {
         'application/json': {
           schema: getModelSchemaRef(UserCredentials, {
             title: 'NewUserCredentialsInUser',
             exclude: ['id'],
-            optional: ['userId']
+            optional: ['userId'],
           }),
         },
       },
-    }) userCredentials: Omit<UserCredentials, 'id'>,
+    })
+    userCredentials: Omit<UserCredentials, 'id'>,
   ): Promise<UserCredentials> {
     return this.userRepository.userCredentials(id).create(userCredentials);
   }
@@ -88,9 +88,12 @@ export class UserUserCredentialsController {
       },
     })
     userCredentials: Partial<UserCredentials>,
-    @param.query.object('where', getWhereSchemaFor(UserCredentials)) where?: Where<UserCredentials>,
+    @param.query.object('where', getWhereSchemaFor(UserCredentials))
+    where?: Where<UserCredentials>,
   ): Promise<Count> {
-    return this.userRepository.userCredentials(id).patch(userCredentials, where);
+    return this.userRepository
+      .userCredentials(id)
+      .patch(userCredentials, where);
   }
 
   @del('/users/{id}/user-credentials', {
@@ -103,7 +106,8 @@ export class UserUserCredentialsController {
   })
   async delete(
     @param.path.string('id') id: string,
-    @param.query.object('where', getWhereSchemaFor(UserCredentials)) where?: Where<UserCredentials>,
+    @param.query.object('where', getWhereSchemaFor(UserCredentials))
+    where?: Where<UserCredentials>,
   ): Promise<Count> {
     return this.userRepository.userCredentials(id).delete(where);
   }

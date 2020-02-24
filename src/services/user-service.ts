@@ -54,9 +54,9 @@ export class MyUserService implements UserService<User, Credentials> {
         ? `${userName} ${user.lastName}`
         : `${user.lastName}`;
     const userProfile: UserProfile = {
-      [securityId]: user.id,
+      [securityId]: user.email,
       name: userName,
-      id: user.id,
+      id: user.email,
     };
 
     return userProfile;

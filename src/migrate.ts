@@ -6,7 +6,11 @@ export async function migrate(args: string[]) {
 
   const app = new Loopback4AuthenticationAppApplication();
   await app.boot();
-  await app.migrateSchema({existingSchema});
+  // See limitation https://github.com/strongloop/loopback-next/issues/2831
+  await app.migrateSchema({
+    existingSchema,
+    models: ['Customer'],
+  });
 
   // Connectors usually keep a pool of opened connections,
   // this keeps the process running even after all work is done.

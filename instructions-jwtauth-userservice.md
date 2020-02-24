@@ -101,10 +101,7 @@ public passwordHasher: PasswordHasher) {}
 
 `verifyCredentials` function: Use the code in https://github.com/strongloop/loopback4-example-shopping/blob/master/packages/shopping/src/services/user-service.ts as a reference.
 
-## Create the DataSource and Repository
-
-- UserRepository
-- UserCredentialsRepository
+## (Optional) Create tables for User and UserCredentials in SQL database
 
 ---
 

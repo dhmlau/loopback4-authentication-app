@@ -1,5 +1,5 @@
 import {BootMixin} from '@loopback/boot';
-import {ApplicationConfig} from '@loopback/core';
+import {ApplicationConfig, BindingKey} from '@loopback/core';
 import {
   RestExplorerBindings,
   RestExplorerComponent,
@@ -15,12 +15,34 @@ import {
 } from '@loopback/authentication';
 import {JWTAuthenticationStrategy} from './strategies/jwt-strategy';
 import {TokenServiceBindings, TokenServiceConstants} from './keys';
+import {JWTService} from './services/jwt-service';
+import {SECURITY_SCHEME_SPEC} from './utils/security-spec';
+
+/**
+ * Information from package.json
+ */
+export interface PackageInfo {
+  name: string;
+  version: string;
+  description: string;
+}
+export const PackageKey = BindingKey.create<PackageInfo>('application.package');
+
+const pkg: PackageInfo = require('../package.json');
 
 export class Loopback4AuthenticationAppApplication extends BootMixin(
   ServiceMixin(RepositoryMixin(RestApplication)),
 ) {
   constructor(options: ApplicationConfig = {}) {
     super(options);
+
+    this.api({
+      openapi: '3.0.0',
+      info: {title: pkg.name, version: pkg.version},
+      paths: {},
+      components: {securitySchemes: SECURITY_SCHEME_SPEC},
+      servers: [{url: '/'}],
+    });
 
     // Set up the custom sequence
     this.sequence(MySequence);

@@ -1,4 +1,8 @@
-import {DefaultCrudRepository, repository, HasOneRepositoryFactory} from '@loopback/repository';
+import {
+  DefaultCrudRepository,
+  repository,
+  HasOneRepositoryFactory,
+} from '@loopback/repository';
 import {User, UserRelations, UserCredentials} from '../models';
 import {DbDataSource} from '../datasources';
 import {inject, Getter} from '@loopback/core';
@@ -6,17 +10,29 @@ import {UserCredentialsRepository} from './user-credentials.repository';
 
 export class UserRepository extends DefaultCrudRepository<
   User,
-  typeof User.prototype.id,
+  typeof User.prototype.email,
   UserRelations
 > {
-
-  public readonly userCredentials: HasOneRepositoryFactory<UserCredentials, typeof User.prototype.id>;
+  public readonly userCredentials: HasOneRepositoryFactory<
+    UserCredentials,
+    typeof User.prototype.email
+  >;
 
   constructor(
-    @inject('datasources.db') dataSource: DbDataSource, @repository.getter('UserCredentialsRepository') protected userCredentialsRepositoryGetter: Getter<UserCredentialsRepository>,
+    @inject('datasources.db') dataSource: DbDataSource,
+    @repository.getter('UserCredentialsRepository')
+    protected userCredentialsRepositoryGetter: Getter<
+      UserCredentialsRepository
+    >,
   ) {
     super(User, dataSource);
-    this.userCredentials = this.createHasOneRepositoryFactoryFor('userCredentials', userCredentialsRepositoryGetter);
-    this.registerInclusionResolver('userCredentials', this.userCredentials.inclusionResolver);
+    this.userCredentials = this.createHasOneRepositoryFactoryFor(
+      'userCredentials',
+      userCredentialsRepositoryGetter,
+    );
+    this.registerInclusionResolver(
+      'userCredentials',
+      this.userCredentials.inclusionResolver,
+    );
   }
 }

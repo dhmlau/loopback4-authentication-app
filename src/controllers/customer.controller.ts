@@ -20,6 +20,7 @@ import {
 import {Customer} from '../models';
 import {CustomerRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
+import {OPERATION_SECURITY_SPEC} from '../utils/security-spec';
 
 @authenticate('JWTStrategy') //add this line to protect all endpoints
 export class CustomerController {
@@ -54,6 +55,7 @@ export class CustomerController {
   }
 
   @get('/customers/count', {
+    security: OPERATION_SECURITY_SPEC,
     responses: {
       '200': {
         description: 'Customer model count',
@@ -69,6 +71,7 @@ export class CustomerController {
   }
 
   @get('/customers', {
+    security: OPERATION_SECURITY_SPEC,
     responses: {
       '200': {
         description: 'Array of Customer model instances',
@@ -91,6 +94,7 @@ export class CustomerController {
   }
 
   @patch('/customers', {
+    security: OPERATION_SECURITY_SPEC,
     responses: {
       '200': {
         description: 'Customer PATCH success count',
@@ -114,6 +118,7 @@ export class CustomerController {
   }
 
   @get('/customers/{id}', {
+    security: OPERATION_SECURITY_SPEC,
     responses: {
       '200': {
         description: 'Customer model instance',
@@ -134,6 +139,7 @@ export class CustomerController {
   }
 
   @patch('/customers/{id}', {
+    security: OPERATION_SECURITY_SPEC,
     responses: {
       '204': {
         description: 'Customer PATCH success',
@@ -155,6 +161,7 @@ export class CustomerController {
   }
 
   @put('/customers/{id}', {
+    security: OPERATION_SECURITY_SPEC,
     responses: {
       '204': {
         description: 'Customer PUT success',
@@ -169,6 +176,7 @@ export class CustomerController {
   }
 
   @del('/customers/{id}', {
+    security: OPERATION_SECURITY_SPEC,
     responses: {
       '204': {
         description: 'Customer DELETE success',
