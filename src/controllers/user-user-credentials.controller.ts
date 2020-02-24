@@ -17,10 +17,15 @@ import {
 } from '@loopback/rest';
 import {User, UserCredentials} from '../models';
 import {UserRepository} from '../repositories';
+import {inject} from '@loopback/core';
+import {PasswordHasherBindings} from '../keys';
+import {PasswordHasher} from '../services/hash.password.bcryptjs';
 
 export class UserUserCredentialsController {
   constructor(
     @repository(UserRepository) protected userRepository: UserRepository,
+    @inject(PasswordHasherBindings.PASSWORD_HASHER)
+    public passwordHasher: PasswordHasher,
   ) {}
 
   @get('/users/{id}/user-credentials', {
@@ -42,7 +47,7 @@ export class UserUserCredentialsController {
     return this.userRepository.userCredentials(id).get(filter);
   }
 
-  @post('/users/{id}/user-credentials', {
+  @post('/users/{email}/user-credentials', {
     responses: {
       '200': {
         description: 'User model instance',
@@ -67,6 +72,10 @@ export class UserUserCredentialsController {
     })
     userCredentials: Omit<UserCredentials, 'id'>,
   ): Promise<UserCredentials> {
+    const password = await this.passwordHasher.hashPassword(
+      userCredentials.password,
+    );
+    userCredentials.password = password;
     return this.userRepository.userCredentials(id).create(userCredentials);
   }
 

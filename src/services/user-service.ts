@@ -27,7 +27,7 @@ export class MyUserService implements UserService<User, Credentials> {
     // Check to see if the user id/email exist
     let foundUser = await this.userRepository.findOne({
       where: {email: credentials.email},
-      include: [{relation: 'userCredential'}],
+      include: [{relation: 'userCredentials'}],
     });
     if (!foundUser) {
       throw new HttpErrors.Unauthorized(invalidCredentialsError);
@@ -38,7 +38,9 @@ export class MyUserService implements UserService<User, Credentials> {
       credentials.password,
       foundUser.userCredentials.password,
     );
-
+    console.log('foundUser password = ', foundUser.userCredentials.password);
+    console.log('credentials.password= ', credentials.password);
+    console.log('passwordMatched=', passwordMatched);
     if (!passwordMatched) {
       throw new HttpErrors.Unauthorized(invalidCredentialsError);
     }
