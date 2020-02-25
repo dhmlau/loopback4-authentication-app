@@ -1,4 +1,10 @@
-## Stage 1: Setting up the minimal infrastructure for authentication
+# Part 1: Setting up the minimal infrastructure for authentication
+
+## Overview
+
+This part of the tutorial set up the minimal infrastructure for adding authentication to a LoopBack application.
+
+## Install the required LoopBack modules
 
 First, ensure you have the necessary packages installed:
 
@@ -24,9 +30,7 @@ import { AuthenticationBindings, AuthenticateFn } from '@loopback/authentication
     const args = await this.parseParams(request, route);
 ```
 
-## Create a authentication strategy
-
-TODO: we want to have jwt authentication eventually?
+## Create an authentication strategy
 
 The AuthenticationStrategy is where the work really happens.
 
@@ -52,6 +56,8 @@ export class JWTAuthenticationStrategy implements AuthenticationStrategy {
 }
 ```
 
+As an initial step, the `authenticate` function always returns a dummy user. Eventually, this method will verify the token from the `request` and returns the corresponding user profile.
+
 ## Register the JWT authentication strategy
 
 Now we need to tell our application that this strategy exists and can be used.
@@ -69,34 +75,68 @@ this.component(AuthenticationComponent);
 registerAuthenticationStrategy(this, JWTAuthenticationStrategy);
 ```
 
-## Start using the Basic authentication strategy in controllers
+## Create `User` model and the corresponding DataSource, Repository and Controller class
 
-Add import
+The `User` model has the following properties using the [model generator command](https://loopback.io/doc/en/lb4/Model-generator.html) `lb4 model` :
 
-```ts
-import {authenticate} from '@loopback/authentication';
+- `email`: string. This is an `id` property.
+- `firstName`: string
+- `lastName`: string
+
+Create the DataSource and Repository class using [DataSource generator](https://loopback.io/doc/en/lb4/DataSource-generator.html) and [Repository generator](https://loopback.io/doc/en/lb4/Repository-generator.html) command.
+
+When creating the controller, follow the prompts below:
+
+```sh
+ lb4 controller
+? Controller class name: User
+Controller User will be created in src/controllers/user.controller.ts
+
+? What kind of controller would you like to generate? REST Controller with CRUD functions
+? What is the name of the model to use with this CRUD repository? User
+? What is the name of your CRUD repository? UserRepository
+? What is the name of ID property? email
+? What is the type of your ID? string
+? Is the id omitted when creating a new instance? Yes
+? What is the base HTTP path name of the CRUD operations? /users
+   create src/controllers/user.controller.ts
+   update src/controllers/index.ts
+
+Controller User was created in src/controllers/
 ```
 
-Say we want to protect all endpoints in this controller.
+Now, you have a controller that can utilize the newly created JWT authentication strategy.
 
-```ts
-@authenticate('JWTStrategy') //add this line to protect all endpoints
-export class CustomerController {
-  //...
-}
-```
+## Start using the JWT authentication strategy in controllers
 
-If we want to skip a particular endpoint, we can use `@authenticate.skip()`, i.e.
+In `src/user.controller.ts`:
 
-```ts
-  @authenticate.skip() //add this line for the endpoint you don't want to be protected
-  @post('/customers', ..)
-```
+1. Add the following import:
+
+   ```ts
+   import {authenticate} from '@loopback/authentication';
+   ```
+
+2. Since we want to protect all endpoints in this controller except the `POST` method, we are enabling the authentication at the class level.
+
+   ```ts
+   @authenticate('JWTStrategy') //add this line to protect all endpoints
+   export class UserController {
+     //...
+   }
+   ```
+
+   And use `@authenticate.skip()` to make the particular endpoints unprotected:
+
+   ```ts
+     @authenticate.skip() //add this line for the endpoint you don't want to be protected
+     @post('/users', ..)
+   ```
 
 ## Add a test to ensure it works as expected
 
 Create acceptance tests for the controller.
-Under `src/__tests__`, in my example, create `customer.controller.acceptance.ts`.
+Under `src/__tests__/acceptance`, in my example, create `user.controller.acceptance.ts`.
 
 Add the following to one of your acceptance tests:
 
@@ -105,7 +145,7 @@ import {Client, expect} from '@loopback/testlab';
 import {Loopback4AuthenticationAppApplication} from '../..';
 import {setupApplication} from './test-helper';
 
-describe('CustomerController', () => {
+describe('UserController', () => {
   let app: Loopback4AuthenticationAppApplication;
   let client: Client;
 
