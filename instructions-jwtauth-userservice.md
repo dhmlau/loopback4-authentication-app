@@ -100,7 +100,113 @@ The purpose of the `UserService` is to:
 
 See [`src/services/user.service.ts`](./src/services/user.service.ts) for content.
 
-## Step 5: (Optional) Create tables for User and UserCredentials in SQL database
+4.  Add the UserService to the binding
+    In `src/keys.ts`, add:
+
+    ```ts
+    // add import
+    import {TokenService, UserService} from '@loopback/authentication';
+    import {User} from './models';
+    import {Credentials} from './services/user-service';
+
+    // add UserServiceBindings
+    export namespace UserServiceBindings {
+      export const USER_SERVICE = BindingKey.create<
+        UserService<User, Credentials>
+      >('services.user.service');
+    }
+    ```
+
+## Step 5: Add `/login` endpoint
+
+In `user.controller.ts`,
+
+1. Inject the services we created in the previous steps
+
+   ```ts
+   // add import
+   import {authenticate, TokenService, UserService} from '@loopback/authentication';
+   import {Credentials} from '../services/user-service';
+   import {PasswordHasherBindings, TokenServiceBindings, UserServiceBindings} from '../keys';
+   import {inject} from '@loopback/core';
+   import { PasswordHasher } from '../services/hash.password.bcryptjs';
+
+   //update the constructor
+   constructor(
+    @repository(UserRepository)
+    public userRepository: UserRepository,
+    @inject(PasswordHasherBindings.PASSWORD_HASHER)
+    public passwordHasher: PasswordHasher,
+    @inject(TokenServiceBindings.TOKEN_SERVICE)
+    public jwtService: TokenService,
+    @inject(UserServiceBindings.USER_SERVICE)
+    public userService: UserService<User, Credentials>,
+   ) {}
+   ```
+
+2. add a `/login` API:
+
+```ts
+  @authenticate.skip()
+  @post('/users/login', {
+    responses: {
+      '200': {
+        description: 'Token',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                token: {
+                  type: 'string',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+  async login(
+    @requestBody({
+      description: 'The input of login function',
+      required: true,
+      content: {
+        // 'application/json': {
+        //   schema: getModelSchemaRef(UserCredentials, {partial: true}),
+        // },
+        'application/json': {
+          schema: {
+            type: 'object',
+            required: ['email', 'password'],
+            properties: {
+              email: {
+                type: 'string',
+                format: 'email',
+              },
+              password: {
+                type: 'string',
+              },
+            },
+          },
+        },
+      },
+    })
+    credentials: Credentials,
+  ): Promise<{token: string}> {
+    // ensure the user exists, and the password is correct
+    const user = await this.userService.verifyCredentials(credentials);
+
+    // convert a User object into a UserProfile object (reduced set of properties)
+    const userProfile = this.userService.convertToUserProfile(user);
+
+    // create a JSON Web Token based on the user profile
+    const token = await this.jwtService.generateToken(userProfile);
+    return {token};
+  }
+```
+
+## Step 6: (Optional) Create tables for User and UserCredentials in SQL database
 
 If you're using a SQL database, you can use the migrate script to create the tables.
 

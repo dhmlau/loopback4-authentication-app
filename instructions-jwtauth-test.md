@@ -1,6 +1,8 @@
-## Test in API Explorer
+## Part 4: Putting it Together
 
-There are extra steps needed to allow us to be able to test the JWT authentication in API Explorer. See docs page: https://loopback.io/doc/en/lb4/Authentication-Tutorial.html#specifying-the-security-settings-in-the-openapi-specification
+### Step 1: Prepare API Explorer to test JWT Authentication
+
+In order to test JWT authentication in the API Explorer (to specify the Authorization header), there are extra steps needed. See docs page: https://loopback.io/doc/en/lb4/Authentication-Tutorial.html#specifying-the-security-settings-in-the-openapi-specification
 
 1. Create `utils/security-spec.ts` with content:
 
@@ -20,55 +22,68 @@ export const SECURITY_SCHEME_SPEC: SecuritySchemeObjects = {
 };
 ```
 
-2. In `customer.controller.ts`,
+2. In `user.controller.ts`,
    Add import:
 
-```ts
-import {OPERATION_SECURITY_SPEC} from '../utils/security-spec';
-```
+   ```ts
+   import {OPERATION_SECURITY_SPEC} from '../utils/security-spec';
+   ```
 
-For the endpoint that you want to add security spec:
+   For the endpoints that you want to add security spec:
 
-```ts
-  @get('/customers/count', {
-    security: OPERATION_SECURITY_SPEC, // ---- ADD THIS LINE ------
-    responses: {
-      '200': {
-        description: 'Customer model count',
-        content: {'application/json': {schema: CountSchema}},
-      },
-    },
-  })
-```
+   ```ts
+     @get('/users/count', {
+       security: OPERATION_SECURITY_SPEC, // add this line
+       responses: {
+         '200': {
+           description: 'User model count',
+           content: {'application/json': {schema: CountSchema}},
+         },
+       },
+     })
+     async count(
+       @param.query.object('where', getWhereSchemaFor(User)) where?: Where<User>,
+     ): Promise<Count> {
+       //...
+     }
+   ```
 
-3. In `application.ts`, add import:
+3. In `application.ts`, add the following:
 
-```ts
-import {SECURITY_SCHEME_SPEC} from './utils/security-spec';
-```
 
-```ts
-/**
- * Information from package.json
- */
-export interface PackageInfo {
-  name: string;
-  version: string;
-  description: string;
-}
-export const PackageKey = BindingKey.create<PackageInfo>('application.package');
+    ```ts
+    //add/modify import
+    import {SECURITY_SCHEME_SPEC} from './utils/security-spec';
+    import {ApplicationConfig, BindingKey} from '@loopback/core';
 
-const pkg: PackageInfo = require('../package.json');
-```
+    /**
+     * Information from package.json
+    */
+    export interface PackageInfo {
+      name: string;
+      version: string;
+      description: string;
+    }
+    export const PackageKey = BindingKey.create<PackageInfo>('application.package');
 
-Inside constructor:
+    const pkg: PackageInfo = require('../package.json');
+    ```
 
-```ts
-this.api({
-  openapi: '3.0.0',
-  info: {title: pkg.name, version: pkg.version},
-  paths: {},
-  components: {securitySchemes: SECURITY_SCHEME_SPEC},
-  servers: [{url: '/'}],
-});
-```
+    Inside constructor:
+
+    ```ts
+    this.api({
+      openapi: '3.0.0',
+      info: {title: pkg.name, version: pkg.version},
+      paths: {},
+      components: {securitySchemes: SECURITY_SCHEME_SPEC},
+      servers: [{url: '/'}],
+    });
+    ```
+
+### Step 2: Testing
+
+Start the application with `npm start` command. Go to the API Explorer: http://localhost:3000/explorer
+
+You should see the "Authorize" button at the top of the API Explorer.
+![](screen-shot-authorize-btn.png)
