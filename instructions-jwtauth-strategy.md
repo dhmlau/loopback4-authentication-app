@@ -1,8 +1,8 @@
-# Part 1: Setting up the minimal infrastructure for authentication
+# Part 1: Set up the authentication startegy
 
 ## Overview
 
-This part of the tutorial set up the minimal infrastructure for adding authentication to a LoopBack application.
+This part of the tutorial set up the authentication stategy in a LoopBack application.
 
 ## Install the required LoopBack modules
 
@@ -20,14 +20,16 @@ incoming HTTP request should check to see if authentication is required.
 Open `src/sequence.ts` and add the following:
 
 ```ts
-// At the top
-import { AuthenticationBindings, AuthenticateFn } from '@loopback/authentication';
-// In the constructor's arguments
-    @inject(AuthenticationBindings.AUTH_ACTION) protected authenticateRequest: AuthenticateFn,
-// In the handle function
-    const route = this.findRoute(request);
-    await this.authenticateRequest(request);    // ADD THIS LINE
-    const args = await this.parseParams(request, route);
+  // At the top
+  import { AuthenticationBindings, AuthenticateFn } from '@loopback/authentication';
+
+  // In the constructor's arguments
+  @inject(AuthenticationBindings.AUTH_ACTION) protected authenticateRequest: AuthenticateFn,
+
+  // In the handle function
+  const route = this.findRoute(request);
+  await this.authenticateRequest(request);    // ADD THIS LINE
+  const args = await this.parseParams(request, route);
 ```
 
 ## Create an authentication strategy
@@ -172,8 +174,13 @@ The test should always pass, because the `authenticate` function always return a
 To test the authentication really works, in `jwt-strategy.ts` `authenticate` function, uncomment the snippet that always throw unauthorized error, i.e.
 
 ```ts
-//always throws unauthorized error
-throw new HttpErrors.Unauthorized('The credentials are not correct.');
+// make sure HttpErrors is added to the import
+import {HttpErrors, Request} from '@loopback/rest';
+//...
+async authenticate(request: Request): Promise<UserProfile | undefined> {
+  //always throws unauthorized error
+  throw new HttpErrors.Unauthorized('The credentials are not correct.');
+}
 ```
 
 When running `npm test`, you will get an error saying:

@@ -1,8 +1,8 @@
-# Stage 2: Set up JWT authentication
+# Part 2: Create a TokenService and Apply it in the JWT Authentication Strategy
 
-## Create binding keys for the TokenService
+## Step 1: Create binding keys for the TokenService
 
-Create `keys.ts` under `src` folder with the following content:
+Create `keys.ts` under `src` folder with the following content. See file [`src/keys.ts`](./src/keys.ts)
 
 ```ts
 import {BindingKey} from '@loopback/context';
@@ -26,181 +26,127 @@ export namespace TokenServiceBindings {
 }
 ```
 
-## Create JWTService to validate the token
+## Step 2: Create JWTService to validate the token
 
-This `JWTService` will validate the token. If the token is valid, it returns the user profile.
+This `JWTService` is a service to validate and generate tokens. It implements the [`TokenService`](https://github.com/strongloop/loopback-next/blob/master/packages/authentication/src/services/token.service.ts), so has 2 functions:
 
-We will be using the `jsonwebtoken` module to encode and decode a token, so let's install this module now by running:
+- `verifyToken`: verify the validity of the token and reutnr the corresponding user profile.
+- `generateToken`: generate the token based on the user profile
 
-```
-$ npm install --save jsonwebtoken
-```
+Here the steps:
 
-Create `src/services/jwt-service.ts` with the following content:
+1. We will be using the `jsonwebtoken` module to encode and decode a token, so let's install this module now by running:
 
-```ts
-import {inject} from '@loopback/context';
-import {HttpErrors} from '@loopback/rest';
-import {promisify} from 'util';
-import {TokenService} from '@loopback/authentication';
-import {UserProfile} from '@loopback/security';
-import {TokenServiceBindings} from '../keys';
+   ```sh
+   $ npm install --save jsonwebtoken
+   ```
 
-const jwt = require('jsonwebtoken');
-const signAsync = promisify(jwt.sign);
-const verifyAsync = promisify(jwt.verify);
+2. Create `src/services/jwt-service.ts`. Copy the content from [`src/services/jwt-services.ts`](src/services/jwt-services.ts)
 
-export class JWTService implements TokenService {
-  constructor(
-    @inject(TokenServiceBindings.TOKEN_SECRET)
-    private jwtSecret: string,
-    @inject(TokenServiceBindings.TOKEN_EXPIRES_IN)
-    private jwtExpiresIn: string,
-  ) {}
+## Step 3: Use JWTService in the existing JWT Authentication Strategy
 
-  async verifyToken(token: string): Promise<UserProfile> {
-    if (!token) {
-      throw new HttpErrors.Unauthorized(
-        `Error verifying token: 'token' is null`,
-      );
-    }
-
-    let userProfile: UserProfile;
-
-    try {
-      // decode user profile from token
-      const decryptedToken = await verifyAsync(token, this.jwtSecret);
-      // don't copy over  token field 'iat' and 'exp', nor 'email' to user profile
-      userProfile = Object.assign(
-        {id: '', name: ''},
-        {id: decryptedToken.id, name: decryptedToken.name},
-      );
-    } catch (error) {
-      throw new HttpErrors.Unauthorized(
-        `Error verifying token: ${error.message}`,
-      );
-    }
-
-    return userProfile;
-  }
-
-  async generateToken(userProfile: UserProfile): Promise<string> {
-    if (!userProfile) {
-      throw new HttpErrors.Unauthorized(
-        'Error generating token: userProfile is null',
-      );
-    }
-
-    // Generate a JSON Web Token
-    let token: string;
-    try {
-      token = await signAsync(userProfile, this.jwtSecret, {
-        expiresIn: Number(this.jwtExpiresIn),
-      });
-    } catch (error) {
-      throw new HttpErrors.Unauthorized(`Error encoding token: ${error}`);
-    }
-
-    return token;
-  }
-}
-```
-
-Reference: https://github.com/strongloop/loopback4-example-shopping/blob/master/packages/shopping/src/services/jwt-service.ts
-
-## Improve on the existing JWT Authentication Strategy
-
-Go to `src/strategies/jwt-strategy.ts` `authenticate` function.
-It extracts the token from the `Authorization` header and call the JWTService to validate the token.
+In the JWT Authentication strategy, instead of blindly return a dummy user in the `authenticate` function, it extracts the token from the `Authorization` header in the request and calls the `JWTService` to validate the token.
 
 1. Modify/Add the import statements
 
-```ts
-import {AuthenticationStrategy, TokenService} from '@loopback/authentication'; //add TokenService
-import {UserProfile, securityId} from '@loopback/security'; //add securityId
-import {TokenServiceBindings} from '../keys'; //add this line
-import {inject} from '@loopback/context'; // add this line
-```
+   ```ts
+   import {
+     AuthenticationStrategy,
+     TokenService,
+   } from '@loopback/authentication'; //add TokenService
+   import {UserProfile, securityId} from '@loopback/security'; //add securityId
+   import {TokenServiceBindings} from '../keys'; //add this line
+   import {inject} from '@loopback/context'; // add this line
+   import {Request, HttpErrors} from '@loopback/rest';
+   ```
 
-2. Add the following parameter in the constructor
+2. Inject the `TokenService` in the constructor, the construction should look like:
 
-```ts
-@inject(TokenServiceBindings.TOKEN_SERVICE)
+   ```ts
+   constructor(
+    @inject(TokenServiceBindings.TOKEN_SERVICE)
     public tokenService: TokenService,
-```
+   ) {}
+   ```
 
-3. Modify the `authenticate` function and add the `extractCredentials` function.
+3. Add the `extractCredentials` function that extracts the token from the Authorization header
 
-```ts
-async authenticate(request: Request): Promise<UserProfile | undefined> {
+   ```ts
+     extractCredentials(request: Request): string {
+       if (!request.headers.authorization) {
+         throw new HttpErrors.Unauthorized(`Authorization header not found.`);
+       }
 
-    // reference implementation
-    const token: string = this.extractCredentials(request);
-    const userProfile: UserProfile = await this.tokenService.verifyToken(token);
-    return userProfile;
-  }
-  extractCredentials(request: Request): string {
-    if (!request.headers.authorization) {
-      throw new HttpErrors.Unauthorized(`Authorization header not found.`);
-    }
+       // for example: Bearer xxx.yyy.zzz
+       const authHeaderValue = request.headers.authorization;
 
-    // for example: Bearer xxx.yyy.zzz
-    const authHeaderValue = request.headers.authorization;
+       if (!authHeaderValue.startsWith('Bearer')) {
+         throw new HttpErrors.Unauthorized(
+           `Authorization header is not of type 'Bearer'.`,
+         );
+       }
 
-    if (!authHeaderValue.startsWith('Bearer')) {
-      throw new HttpErrors.Unauthorized(
-        `Authorization header is not of type 'Bearer'.`,
-      );
-    }
+       //split the string into 2 parts: 'Bearer ' and the `xxx.yyy.zzz`
+       const parts = authHeaderValue.split(' ');
+       if (parts.length !== 2)
+         throw new HttpErrors.Unauthorized(
+           `Authorization header value has too many parts. It must follow the pattern: 'Bearer xx.yy.zz' where xx.yy.zz is a valid JWT token.`,
+         );
+       const token = parts[1];
 
-    //split the string into 2 parts: 'Bearer ' and the `xxx.yyy.zzz`
-    const parts = authHeaderValue.split(' ');
-    if (parts.length !== 2)
-      throw new HttpErrors.Unauthorized(
-        `Authorization header value has too many parts. It must follow the pattern: 'Bearer xx.yy.zz' where xx.yy.zz is a valid JWT token.`,
-      );
-    const token = parts[1];
+       return token;
+     }
+   ```
 
-    return token;
-  }
-```
+4. In the `authenticate` function, calls the `extractCredentials` to get the token which will then be passed to the TokenService for validation.
 
-Reference: https://github.com/strongloop/loopback4-example-shopping/blob/master/packages/shopping/src/authentication-strategies/jwt-strategy.ts
+   ```ts
+   async authenticate(request: Request): Promise<UserProfile | undefined> {
 
-## Bind JWT secret and other values to the binding keys
+       // reference implementation
+       const token: string = this.extractCredentials(request);
+       const userProfile: UserProfile = await this.tokenService.verifyToken(token);
+       return userProfile;
+     }
+   ```
+
+See file [src/strategies/jwt-strategy.ts](./src/strategies/jwt-strategy.ts)
+
+## Step 4: Set up the Bindings
 
 To bind the JWT secret, expires in values and the JWTService class to binding keys, go to `src/application.ts`
 
-Add the imports:
+1. Add the imports:
 
-```ts
-import {TokenServiceBindings, TokenServiceConstants} from './keys';
-import {JWTService} from './services/jwt-service';
-```
+   ```ts
+   import {TokenServiceBindings, TokenServiceConstants} from './keys';
+   import {JWTService} from './services/jwt-service';
+   ```
 
-```ts
-constructor(options?: ApplicationConfig) {
-    super(options);
+2. Set up the bindings
 
-    // add this to the bottom of the constructor
-    this.setUpBindings();
-  }
+   ```ts
+   constructor(options?: ApplicationConfig) {
+      super(options);
+      // ...
+      // add this to the bottom of the constructor
+      this.setUpBindings();
+    }
 
-  setUpBindings(): void {
+    setUpBindings(): void {
 
-    this.bind(TokenServiceBindings.TOKEN_SECRET).to(
-      TokenServiceConstants.TOKEN_SECRET_VALUE,
-    );
+      this.bind(TokenServiceBindings.TOKEN_SECRET).to(
+        TokenServiceConstants.TOKEN_SECRET_VALUE,
+      );
 
-    this.bind(TokenServiceBindings.TOKEN_EXPIRES_IN).to(
-      TokenServiceConstants.TOKEN_EXPIRES_IN_VALUE,
-    );
+      this.bind(TokenServiceBindings.TOKEN_EXPIRES_IN).to(
+        TokenServiceConstants.TOKEN_EXPIRES_IN_VALUE,
+      );
 
-    this.bind(TokenServiceBindings.TOKEN_SERVICE).toClass(JWTService);
+      this.bind(TokenServiceBindings.TOKEN_SERVICE).toClass(JWTService);
 
-  }
-
-```
+    }
+   ```
 
 ---
 
