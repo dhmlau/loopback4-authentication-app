@@ -1,25 +1,45 @@
-## Stage 3: Create UserService
+## Part 3: Create the UserService
 
-## Create `User` and `UserCredentials` model
+In this example, the user profile and credentials are stored in a database. The password will be hashed before going into the database.
+
+There are two models associated with it:
+
+- `User`: user profile which contains all the user information
+- `UserCredentials`: it has the userid and the hashed password
+
+In terms of the model relation, `User` `hasOne` `UserCredentials`.
+
+Eventually, we're going to add the `/login` endpoint that checks the credentials of the user using the UserService and returns the token from the TokenService.
+
+## Step 1: Create `User` and `UserCredentials` model
 
 First, we're going to define the `User` and `UserCredentials` model using the `lb4 model` command.
 
 `User` model has the following properties. All are of string type and required.
 
-- id: generated value
-- email
-- first name
-- last name
+- `email`: string. id field
+- `firstName`: string
+- `lastName`: string
 
 `UserCredentials` model has the following properties.
 
-- id: generated value
-- userId: this is the same as the email.
-- password: hashed value of the real password
+- `id`: string. id field. generated.
+- `userId`: string. This is the same as `email` in the `User` model.
+- `password`: string.
 
-## Create the datasource and Repository for User and UserCredentials
+See `src/models/user.model.ts` and `src/models/user-credentials.model.ts` for reference.
 
-## Add model relation
+## Step 2: Create the datasource and Repository for User and UserCredentials
+
+1. Create datasource using `lb4 datasource` and name it as `ds`.
+   In this example, we use Postgresql as the database. After running this command, you should have two files created under `src/datasources`:
+
+   - [ds.datasource.config.json](src/datasources/ds.datasource.config.json)
+   - [ds.datasource.ts](src/datasources/ds.datasource.ts)
+
+2. Create the Repository classes for User and UserCredentials using `lb4 repository`.
+
+## Step 3: Add model relation
 
 There is a `hasOne` relation between `User` and `UserCredentials`. Next, we're going to define it using the `lb4 relation` command.
 
@@ -37,7 +57,7 @@ ials
 Relation HasOne was created in src/
 ```
 
-### Create UserService
+### Step 4: Create UserService
 
 This really depends on how you're authenticating the users. You might have a database to check against, or you're calling external services.
 
@@ -45,64 +65,103 @@ The purpose of the `UserService` is to:
 
 - obtain the credentials
 - authenticate the user
-- if the user exists, return the user profile.
+- if the user exists, return the user profile with the UserCredential information.
 
-1. Create a HashPassword service, `services/hash.password.bcryptjs.ts`
+1. Create a HashPassword service, `services/hash.password.bcryptjs.ts` with the content in [src/services/hash.password.bcryptjs.ts](./src/services/hash.password.bcryptjs.ts).
 
-   Run
+   Install the following modules as well:
 
    ```sh
    $ npm i bcryptjs --save
    $ npm i @types/bcryptjs --save-dev
    ```
 
-See https://github.com/strongloop/loopback4-example-shopping/blob/master/packages/shopping/src/services/hash.password.bcryptjs.ts
-
 2. Add `PasswordHasherBindings` key which will be used later.
 
-Go to `keys.ts`.
-
-Add:
-
-```ts
-export namespace PasswordHasherBindings {
-  export const PASSWORD_HASHER = BindingKey.create<PasswordHasher>(
-    'services.hasher',
-  );
-  export const ROUNDS = BindingKey.create<number>('services.hasher.round');
-}
-```
-
-and add import:
-
-```ts
-import {PasswordHasher} from './services/hash.password.bcryptjs';
-```
-
-3. In UserService,
-
-   Add import:
+   Go to `keys.ts`, and add:
 
    ```ts
-   import {UserRepository} from '../repositories';
-   import {repository} from '@loopback/repository';
-   import {inject} from '@loopback/context';
-   import {PasswordHasher} from './hash.password.bcryptjs';
-   import {PasswordHasherBindings} from '../keys';
+   // add import
+   import {PasswordHasher} from './services/hash.password.bcryptjs';
+
+   // add the PasswordHasherBindings
+   export namespace PasswordHasherBindings {
+     export const PASSWORD_HASHER = BindingKey.create<PasswordHasher>(
+       'services.hasher',
+     );
+     export const ROUNDS = BindingKey.create<number>('services.hasher.round');
+   }
    ```
 
-Modify the constructor:
+3. Under `src/services` folder, create `user-service.ts` for the UserService. The new `MyUserService` implements the `UserService` from `@loopback/authentication`, therefore, it has the following two functions:
 
-```ts
-constructor(@repository(UserRepository) public userRepository: UserRepository,
-@inject(PasswordHasherBindings.PASSWORD_HASHER)
-public passwordHasher: PasswordHasher) {}
-```
+- verifyCredentials
+- convertToUserProfile
 
-`verifyCredentials` function: Use the code in https://github.com/strongloop/loopback4-example-shopping/blob/master/packages/shopping/src/services/user-service.ts as a reference.
+See [`src/services/user.service.ts`](./src/services/user.service.ts) for content.
 
-## (Optional) Create tables for User and UserCredentials in SQL database
+## Step 5: (Optional) Create tables for User and UserCredentials in SQL database
+
+If you're using a SQL database, you can use the migrate script to create the tables.
+
+1. The migrate script does not create the foreign keys by default. We're going to edit the `@model` decorator for `UserCredentials`.
+
+   ```ts
+   @model({
+     settings: {
+       foreignKeys: {
+         fk_credential_userId: {
+           name: 'fk_credential_userId',
+           entity: 'User',
+           entityKey: 'email',
+           foreignKey: 'userid',
+         },
+       },
+     },
+   })
+   export class UserCredentials extends Entity {
+   ```
+
+2. Run
+
+   ```sh
+   npm run build
+   npm run migrate
+   ```
+
+   You'll get the table definition as below:
+
+   ```
+   userdb=# \d user
+                Table "public.user"
+   Column   | Type | Collation | Nullable | Default
+   -----------+------+-----------+----------+---------
+   email     | text |           | not null |
+   firstname | text |           |          |
+   lastname  | text |           |          |
+   Indexes:
+    "user_pkey" PRIMARY KEY, btree (email)
+   Referenced by:
+    TABLE "usercredentials" CONSTRAINT "fk_credential_userId" FOREIGN KEY (userid) REFERENCES "user"(email)
+
+    userdb=# \d usercredentials
+    Table "public.usercredentials"
+    Column | Type | Collation | Nullable | Default
+    ----------+---------+-----------+----------+---------------------------------------------
+    id | integer | | not null | nextval('usercredentials_id_seq'::regclass)
+    userid | text | | not null |
+    password | text | | not null |
+    Indexes:
+    "usercredentials_pkey" PRIMARY KEY, btree (id)
+    Foreign-key constraints:
+    "fk_credential_userId" FOREIGN KEY (userid) REFERENCES "user"(email)
+
+   ```
 
 ---
 
 [![LoopBack](<https://github.com/strongloop/loopback-next/raw/master/docs/site/imgs/branding/Powered-by-LoopBack-Badge-(blue)-@2x.png>)](http://loopback.io/)
+
+```
+
+```

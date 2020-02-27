@@ -6,7 +6,7 @@ import {repository} from '@loopback/repository';
 import {inject} from '@loopback/context';
 import {PasswordHasher} from './hash.password.bcryptjs';
 import {PasswordHasherBindings} from '../keys';
-import {HttpErrors} from '@loopback/rest-explorer/node_modules/@loopback/rest';
+import {HttpErrors} from '@loopback/rest';
 
 export type Credentials = {
   email: string;
@@ -38,9 +38,7 @@ export class MyUserService implements UserService<User, Credentials> {
       credentials.password,
       foundUser.userCredentials.password,
     );
-    console.log('foundUser password = ', foundUser.userCredentials.password);
-    console.log('credentials.password= ', credentials.password);
-    console.log('passwordMatched=', passwordMatched);
+
     if (!passwordMatched) {
       throw new HttpErrors.Unauthorized(invalidCredentialsError);
     }
