@@ -1,3 +1,5 @@
+**THIS IS AN OUTDATED REPO. For the latest changes, see https://github.com/dhmlau/loopback4-user-app instead.**
+
 # loopback4-authentication-app
 
 This LoopBack 4 application is based on https://github.com/strongloop/loopback-next/pull/4223.
