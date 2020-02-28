@@ -87,3 +87,8 @@ Start the application with `npm start` command. Go to the API Explorer: http://l
 
 You should see the "Authorize" button at the top of the API Explorer.
 ![](screen-shot-authorize-btn.png)
+
+1. Create user using `/users/signup`
+2. Log in using `/users/login`. After you log in, copy the returned token
+3. Click Authorize at the top of API Explorer, paste the token you got in the previous step.
+4. You now can call other endpoints.

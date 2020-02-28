@@ -117,6 +117,26 @@ See [`src/services/user.service.ts`](./src/services/user.service.ts) for content
     }
     ```
 
+5.  In the applcation.ts, add the bindings in the `setUpBindings()` function.
+
+    ```ts
+    //update / add import
+    import {
+      TokenServiceBindings,
+      TokenServiceConstants,
+      PasswordHasherBindings,
+      UserServiceBindings,
+    } from './keys';
+    import {BcryptHasher} from './services/hash.password.bcryptjs';
+    import {MyUserService} from './services/user-service';
+
+    // add binding in setUpBindings function
+    this.bind(PasswordHasherBindings.ROUNDS).to(10);
+    this.bind(PasswordHasherBindings.PASSWORD_HASHER).toClass(BcryptHasher);
+
+    this.bind(UserServiceBindings.USER_SERVICE).toClass(MyUserService);
+    ```
+
 ## Step 5: Add `/login` endpoint
 
 In `user.controller.ts`,
@@ -206,7 +226,30 @@ In `user.controller.ts`,
   }
 ```
 
-## Step 6: (Optional) Create tables for User and UserCredentials in SQL database
+## Step 6: (Optional) Create a `/signup` endpoint
+
+When adding a user, we want to add both the user profile information and the credential all at once. So it's better to create a separate endpoint for that.
+
+In `src/controllers/user.controller.ts`,
+
+1. add a `NewUserRequest` model
+
+   ```ts
+   @model()
+   export class NewUserRequest extends User {
+     @property({
+       type: 'string',
+       required: true,
+     })
+     password: string;
+   }
+   ```
+
+2. add a `signup` function
+
+See `src/controllers/user.controller.ts`
+
+## Step 7: (Optional) Create tables for User and UserCredentials in SQL database
 
 If you're using a SQL database, you can use the migrate script to create the tables.
 
